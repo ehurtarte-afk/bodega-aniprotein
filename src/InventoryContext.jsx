@@ -1,0 +1,291 @@
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, onValue, set, push } from "firebase/database";
+import { initialBlocks } from "./data";
+import { firebaseConfig, firebaseEnabled } from "./firebaseConfig";
+
+const InventoryContext = createContext(null);
+
+const STORAGE_KEY = "bodega_blocks_v1";
+const HISTORY_KEY = "bodega_history_v1";
+const THRESHOLD_KEY = "bodega_threshold_v1";
+const DEFAULT_THRESHOLD = 8;
+
+// ---------- Firebase (inicializado una sola vez si está configurado) ----------
+let firebaseApp = null;
+let firebaseDb = null;
+
+function getFirebaseDb() {
+  if (!firebaseEnabled) return null;
+  if (!firebaseApp) {
+    try {
+      firebaseApp = initializeApp(firebaseConfig);
+      firebaseDb = getDatabase(firebaseApp);
+    } catch (err) {
+      console.error("Error iniciando Firebase:", err);
+      return null;
+    }
+  }
+  return firebaseDb;
+}
+
+function loadLocal(key, fallback) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore corrupt storage
+  }
+  return fallback;
+}
+
+function loadThreshold() {
+  try {
+    const raw = window.localStorage.getItem(THRESHOLD_KEY);
+    if (raw) return Number(raw);
+  } catch {
+    // ignore
+  }
+  return DEFAULT_THRESHOLD;
+}
+
+function nowStamp() {
+  return new Date().toLocaleString("es-MX", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function InventoryProvider({ children }) {
+  const [blocks, setBlocksState] = useState(() => loadLocal(STORAGE_KEY, initialBlocks));
+  const [history, setHistoryState] = useState(() => loadLocal(HISTORY_KEY, []));
+  const [threshold, setThresholdState] = useState(loadThreshold);
+  const [role, setRole] = useState("editor");
+  const [cloudReady, setCloudReady] = useState(false);
+  const blocksRef = useRef(blocks);
+  blocksRef.current = blocks;
+
+  // Conectar a Firebase si está configurado, y suscribirse a cambios en vivo
+  useEffect(() => {
+    if (!firebaseEnabled) return;
+    let offBlocks = () => {};
+    let offHistory = () => {};
+    try {
+      const db = getFirebaseDb();
+      if (!db) return;
+
+      const blocksNode = ref(db, "blocks");
+      const historyNode = ref(db, "history");
+
+      offBlocks = onValue(
+        blocksNode,
+        (snap) => {
+          try {
+            const val = snap.val();
+            if (val == null) {
+              set(blocksNode, initialBlocks).catch((err) => console.error("Error sembrando datos:", err));
+            } else {
+              setBlocksState(val);
+            }
+            setCloudReady(true);
+          } catch (err) {
+            console.error("Error procesando snapshot de blocks:", err);
+          }
+        },
+        (err) => console.error("Error leyendo blocks:", err)
+      );
+
+      offHistory = onValue(
+        historyNode,
+        (snap) => {
+          try {
+            const val = snap.val();
+            setHistoryState(val ? Object.values(val).sort((a, b) => (a.id < b.id ? 1 : -1)) : []);
+          } catch (err) {
+            console.error("Error procesando snapshot de history:", err);
+          }
+        },
+        (err) => console.error("Error leyendo history:", err)
+      );
+    } catch (err) {
+      console.error("Error conectando a Firebase, usando modo local:", err);
+    }
+
+    return () => {
+      try {
+        offBlocks();
+        offHistory();
+      } catch {
+        // ignore cleanup errors
+      }
+    };
+  }, []);
+
+  const persist = useCallback((next) => {
+    setBlocksState(next);
+    const db = getFirebaseDb();
+    if (db) {
+      set(ref(db, "blocks"), next).catch((err) => console.error("Error guardando blocks:", err));
+    } else {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // storage full or unavailable
+      }
+    }
+  }, []);
+
+  const logEvent = useCallback((blockId, harina, message) => {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      blockId,
+      harina,
+      message,
+      ts: nowStamp(),
+    };
+    const db = getFirebaseDb();
+    if (db) {
+      const node = push(ref(db, "history"));
+      set(node, entry).catch((err) => console.error("Error guardando historial:", err));
+    } else {
+      setHistoryState((prev) => {
+        const next = [entry, ...prev].slice(0, 300);
+        try {
+          window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    }
+  }, []);
+
+  const setThreshold = useCallback((n) => {
+    const clean = Number.isFinite(Number(n)) && Number(n) >= 0 ? Number(n) : DEFAULT_THRESHOLD;
+    setThresholdState(clean);
+    try {
+      window.localStorage.setItem(THRESHOLD_KEY, String(clean));
+    } catch {
+      // ignore — threshold stays local per-device by design, it's a view preference
+    }
+  }, []);
+
+  const updateSection = useCallback(
+    (blockId, sectionId, patch) => {
+      const cleanPatch = { ...patch };
+      if ("bigBags" in cleanPatch) {
+        const n = Number(cleanPatch.bigBags);
+        cleanPatch.bigBags = Number.isFinite(n) && n >= 0 ? n : 0;
+      }
+      if ("tarimas" in cleanPatch) {
+        const n = Number(cleanPatch.tarimas);
+        cleanPatch.tarimas = Number.isFinite(n) && n >= 0 ? n : 0;
+      }
+      let harinaForLog = "";
+      let changeMsg = "";
+      const current = blocksRef.current;
+      const next = current.map((b) => {
+        if (b.id !== blockId) return b;
+        return {
+          ...b,
+          secciones: b.secciones.map((s) => {
+            if (s.id !== sectionId) return s;
+            harinaForLog = s.harina;
+            const parts = [];
+            if ("bigBags" in cleanPatch && Number(cleanPatch.bigBags) !== Number(s.bigBags)) {
+              parts.push(`Big Bags ${s.bigBags} → ${cleanPatch.bigBags}`);
+            }
+            if ("tarimas" in cleanPatch && Number(cleanPatch.tarimas) !== Number(s.tarimas)) {
+              parts.push(`Tarimas ${s.tarimas} → ${cleanPatch.tarimas}`);
+            }
+            if ("lote" in cleanPatch && cleanPatch.lote !== s.lote) {
+              parts.push(`Lote ${s.lote || "—"} → ${cleanPatch.lote || "—"}`);
+            }
+            changeMsg = parts.join(" · ");
+            return { ...s, ...cleanPatch, actualizado: new Date().toISOString().slice(0, 10) };
+          }),
+        };
+      });
+      persist(next);
+      if (changeMsg) logEvent(blockId, harinaForLog, changeMsg);
+    },
+    [persist, logEvent]
+  );
+
+  const adjustSection = useCallback(
+    (blockId, sectionId, field, delta) => {
+      const block = blocksRef.current.find((b) => b.id === blockId);
+      const section = block?.secciones.find((s) => s.id === sectionId);
+      if (!section) return;
+      const current = Number(section[field] || 0);
+      const next = Math.max(0, current + delta);
+      updateSection(blockId, sectionId, { [field]: next });
+    },
+    [updateSection]
+  );
+
+  const addSection = useCallback(
+    (blockId, section) => {
+      const current = blocksRef.current;
+      const newId = `${blockId}-${Date.now()}`;
+      const next = current.map((b) => {
+        if (b.id !== blockId) return b;
+        return {
+          ...b,
+          secciones: [
+            ...b.secciones,
+            { id: newId, ...section, actualizado: new Date().toISOString().slice(0, 10) },
+          ],
+        };
+      });
+      persist(next);
+      logEvent(blockId, section.harina, `Sección agregada: ${section.bigBags} Big Bags, ${section.tarimas} tarimas, lote ${section.lote || "—"}`);
+    },
+    [persist, logEvent]
+  );
+
+  const removeSection = useCallback(
+    (blockId, sectionId) => {
+      const current = blocksRef.current;
+      const block = current.find((b) => b.id === blockId);
+      const section = block?.secciones.find((s) => s.id === sectionId);
+      const next = current.map((b) => {
+        if (b.id !== blockId) return b;
+        return { ...b, secciones: b.secciones.filter((s) => s.id !== sectionId) };
+      });
+      persist(next);
+      if (section) logEvent(blockId, section.harina, `Sección eliminada (tenía ${section.bigBags} Big Bags, lote ${section.lote || "—"})`);
+    },
+    [persist, logEvent]
+  );
+
+  const resetData = useCallback(() => {
+    persist(initialBlocks);
+  }, [persist]);
+
+  const value = {
+    blocks,
+    role,
+    setRole,
+    updateSection,
+    adjustSection,
+    addSection,
+    removeSection,
+    resetData,
+    history,
+    threshold,
+    setThreshold,
+    cloudMode: firebaseEnabled,
+    cloudReady,
+  };
+
+  return <InventoryContext.Provider value={value}>{children}</InventoryContext.Provider>;
+}
+
+export function useInventory() {
+  const ctx = useContext(InventoryContext);
+  if (!ctx) throw new Error("useInventory debe usarse dentro de InventoryProvider");
+  return ctx;
+}
