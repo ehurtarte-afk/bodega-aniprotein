@@ -58,8 +58,31 @@ function nowStamp() {
   });
 }
 
+// Firebase puede convertir arrays con "huecos" en objetos indexados, o
+// devolver null/undefined para posiciones vacías. Esta función limpia
+// cualquier dato (de Firebase o localStorage) a una forma segura y
+// predecible: siempre un array de bloques, cada uno con un array de
+// secciones (nunca null/undefined).
+function normalizeBlocks(raw) {
+  if (raw == null) return [];
+  const asArray = Array.isArray(raw) ? raw : Object.values(raw);
+  return asArray
+    .filter((b) => b != null)
+    .map((b) => {
+      const seccionesRaw = b.secciones;
+      let secciones = [];
+      if (Array.isArray(seccionesRaw)) {
+        secciones = seccionesRaw.filter((s) => s != null);
+      } else if (seccionesRaw && typeof seccionesRaw === "object") {
+        secciones = Object.values(seccionesRaw).filter((s) => s != null);
+      }
+      return { ...b, secciones };
+    })
+    .sort((a, b) => Number(a.id) - Number(b.id));
+}
+
 export function InventoryProvider({ children }) {
-  const [blocks, setBlocksState] = useState(() => loadLocal(STORAGE_KEY, initialBlocks));
+  const [blocks, setBlocksState] = useState(() => normalizeBlocks(loadLocal(STORAGE_KEY, initialBlocks)));
   const [history, setHistoryState] = useState(() => loadLocal(HISTORY_KEY, []));
   const [threshold, setThresholdState] = useState(loadThreshold);
   const [role, setRole] = useState("editor");
@@ -86,8 +109,9 @@ export function InventoryProvider({ children }) {
             const val = snap.val();
             if (val == null) {
               set(blocksNode, initialBlocks).catch((err) => console.error("Error sembrando datos:", err));
+              setBlocksState(normalizeBlocks(initialBlocks));
             } else {
-              setBlocksState(val);
+              setBlocksState(normalizeBlocks(val));
             }
             setCloudReady(true);
           } catch (err) {
@@ -102,7 +126,7 @@ export function InventoryProvider({ children }) {
         (snap) => {
           try {
             const val = snap.val();
-            setHistoryState(val ? Object.values(val).sort((a, b) => (a.id < b.id ? 1 : -1)) : []);
+            setHistoryState(val ? Object.values(val).filter((h) => h != null).sort((a, b) => (a.id < b.id ? 1 : -1)) : []);
           } catch (err) {
             console.error("Error procesando snapshot de history:", err);
           }
@@ -124,13 +148,18 @@ export function InventoryProvider({ children }) {
   }, []);
 
   const persist = useCallback((next) => {
-    setBlocksState(next);
+    const clean = normalizeBlocks(next);
+    setBlocksState(clean);
     const db = getFirebaseDb();
     if (db) {
-      set(ref(db, "blocks"), next).catch((err) => console.error("Error guardando blocks:", err));
+      // Guardamos como objeto con clave = id de bloque (no array indexado),
+      // así Firebase nunca puede generar "huecos" aunque falten bloques.
+      const asObject = {};
+      clean.forEach((b) => { asObject[`b${b.id}`] = b; });
+      set(ref(db, "blocks"), asObject).catch((err) => console.error("Error guardando blocks:", err));
     } else {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
       } catch {
         // storage full or unavailable
       }
