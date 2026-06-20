@@ -4,6 +4,8 @@ import { InventoryProvider, useInventory } from "./InventoryContext";
 import Dashboard from "./pages/Dashboard";
 import BlockDetail from "./pages/BlockDetail";
 import QRView from "./pages/QRView";
+import DispatchHome from "./pages/DispatchHome";
+import Dispatch from "./pages/Dispatch";
 import mascota from "./assets/mascota.png";
 import "./index.css";
 
@@ -53,6 +55,7 @@ function TopBar() {
           <span>Rol:</span>
           <select value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="editor">Editor</option>
+            <option value="despachador">Despachador</option>
             <option value="lectura">Solo lectura</option>
           </select>
         </div>
@@ -62,14 +65,17 @@ function TopBar() {
 }
 
 function AppInner() {
+  const { role } = useInventory();
   return (
     <HashRouter>
       <TopBar />
       <div className="app-shell">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={role === "despachador" ? <DispatchHome /> : <Dashboard />} />
           <Route path="/bloque/:id" element={<BlockDetail />} />
           <Route path="/qr" element={<QRView />} />
+          <Route path="/despachos" element={<DispatchHome />} />
+          <Route path="/despacho/:id" element={<Dispatch />} />
         </Routes>
       </div>
     </HashRouter>

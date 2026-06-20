@@ -858,6 +858,145 @@ button { font-family: var(--font-body); }
   margin-bottom: 18px;
 }
 
+/* ---------- Dispatch (salida de despachos) ---------- */
+
+.dispatch-card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-line);
+  border-radius: 18px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: 150px 1fr;
+}
+
+@media (max-width: 640px) {
+  .dispatch-card { grid-template-columns: 1fr; }
+}
+
+.dispatch-sack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 10px;
+}
+
+.dispatch-sack img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.12));
+}
+
+.dispatch-content {
+  padding: 18px 20px;
+  border-left: 1px solid var(--gray-line);
+}
+
+@media (max-width: 640px) {
+  .dispatch-content { border-left: none; border-top: 1px solid var(--gray-line); }
+}
+
+.dispatch-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.dispatch-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dispatch-available {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  background: var(--gray-bg);
+  padding: 9px 12px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.dispatch-available strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+}
+
+.dispatch-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dispatch-input-group label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9aa1a8;
+  margin-bottom: 6px;
+}
+
+.dispatch-input-group input {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-line);
+  border-radius: 12px;
+  color: var(--ink);
+}
+
+.dispatch-input-group input.input-error {
+  border-color: var(--red);
+  background: var(--red-pale);
+  color: var(--red);
+}
+
+.dispatch-feedback {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.dispatch-feedback.error { background: var(--red-pale); color: var(--red); }
+.dispatch-feedback.success { background: var(--green-pale); color: var(--green); }
+
+.dispatch-submit {
+  width: 100%;
+  justify-content: center;
+  font-size: 14px;
+  padding: 13px 18px;
+}
+
+.dispatch-confirm {
+  background: var(--blue-pale);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dispatch-confirm span {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--blue-dark);
+}
+
+
 /* ---------- QR panel ---------- */
 
 .qr-panel {

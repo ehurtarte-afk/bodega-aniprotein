@@ -290,6 +290,46 @@ export function InventoryProvider({ children }) {
     [persist, logEvent]
   );
 
+  // Registrar una salida/despacho: resta Big Bags y Tarimas de una sección,
+  // validando que nunca se pueda sacar más de lo disponible.
+  // Devuelve { ok: true } si se aplicó, o { ok: false, error: "..." } si no.
+  const dispatchSection = useCallback(
+    (blockId, sectionId, salidaBigBags, salidaTarimas) => {
+      const block = blocksRef.current.find((b) => b.id === blockId);
+      const section = block?.secciones.find((s) => s.id === sectionId);
+      if (!section) return { ok: false, error: "No se encontró esa sección." };
+
+      const outBigBags = Number(salidaBigBags) || 0;
+      const outTarimas = Number(salidaTarimas) || 0;
+      const curBigBags = Number(section.bigBags || 0);
+      const curTarimas = Number(section.tarimas || 0);
+
+      if (outBigBags < 0 || outTarimas < 0) {
+        return { ok: false, error: "Las cantidades no pueden ser negativas." };
+      }
+      if (outBigBags === 0 && outTarimas === 0) {
+        return { ok: false, error: "Ingresa al menos una cantidad a despachar." };
+      }
+      if (outBigBags > curBigBags) {
+        return { ok: false, error: `Solo hay ${curBigBags} Big Bags disponibles, no puedes sacar ${outBigBags}.` };
+      }
+      if (outTarimas > curTarimas) {
+        return { ok: false, error: `Solo hay ${curTarimas} tarimas disponibles, no puedes sacar ${outTarimas}.` };
+      }
+
+      const nextBigBags = curBigBags - outBigBags;
+      const nextTarimas = curTarimas - outTarimas;
+      updateSection(blockId, sectionId, { bigBags: nextBigBags, tarimas: nextTarimas });
+      logEvent(
+        blockId,
+        section.harina,
+        `🚚 Despacho: salieron ${outBigBags} Big Bags y ${outTarimas} tarimas (quedan ${nextBigBags} Big Bags, ${nextTarimas} tarimas)`
+      );
+      return { ok: true };
+    },
+    [updateSection, logEvent]
+  );
+
   const resetData = useCallback(() => {
     persist(initialBlocks);
   }, [persist]);
@@ -300,6 +340,7 @@ export function InventoryProvider({ children }) {
     setRole,
     updateSection,
     adjustSection,
+    dispatchSection,
     addSection,
     removeSection,
     resetData,
