@@ -9,6 +9,9 @@ function getSacoSrc(filename) {
   return match ? match[1] : null;
 }
 
+const MAX_BIGBAGS_POR_SALIDA = 20;
+const MAX_TARIMAS_POR_SALIDA = 15;
+
 function DispatchForm({ blockId, section, onDispatch }) {
   const tipo = getTipoHarina(section.harina);
   const sacoSrc = getSacoSrc(tipo.saco);
@@ -21,8 +24,15 @@ function DispatchForm({ blockId, section, onDispatch }) {
   const curTarimas = Number(section.tarimas || 0);
   const outBigBags = Number(bigBags) || 0;
   const outTarimas = Number(tarimas) || 0;
-  const excedeBigBags = outBigBags > curBigBags;
-  const excedeTarimas = outTarimas > curTarimas;
+
+  const tope = (val, max) => (val === "" ? "" : String(Math.min(Number(val) || 0, max)));
+
+  const excedeLimiteBigBags = outBigBags > MAX_BIGBAGS_POR_SALIDA;
+  const excedeLimiteTarimas = outTarimas > MAX_TARIMAS_POR_SALIDA;
+  const excedeStockBigBags = outBigBags > curBigBags;
+  const excedeStockTarimas = outTarimas > curTarimas;
+  const excedeBigBags = excedeLimiteBigBags || excedeStockBigBags;
+  const excedeTarimas = excedeLimiteTarimas || excedeStockTarimas;
 
   const handleSubmit = () => {
     setFeedback(null);
@@ -57,11 +67,10 @@ function DispatchForm({ blockId, section, onDispatch }) {
 
         <div className="dispatch-inputs">
           <div className="dispatch-input-group">
-            <label>Big Bags que salen</label>
+            <label>Big Bags que salen (máx. {MAX_BIGBAGS_POR_SALIDA})</label>
             <input
               type="number"
               min="0"
-              max={curBigBags}
               value={bigBags}
               onChange={(e) => { setBigBags(e.target.value); setFeedback(null); }}
               className={excedeBigBags ? "input-error" : ""}
@@ -69,11 +78,10 @@ function DispatchForm({ blockId, section, onDispatch }) {
             />
           </div>
           <div className="dispatch-input-group">
-            <label>Tarimas que salen</label>
+            <label>Tarimas que salen (máx. {MAX_TARIMAS_POR_SALIDA})</label>
             <input
               type="number"
               min="0"
-              max={curTarimas}
               value={tarimas}
               onChange={(e) => { setTarimas(e.target.value); setFeedback(null); }}
               className={excedeTarimas ? "input-error" : ""}
@@ -84,9 +92,11 @@ function DispatchForm({ blockId, section, onDispatch }) {
 
         {(excedeBigBags || excedeTarimas) && (
           <div className="dispatch-feedback error">
-            ⚠️ No puedes sacar más de lo disponible
-            {excedeBigBags && ` (máximo ${curBigBags} Big Bags)`}
-            {excedeTarimas && ` (máximo ${curTarimas} tarimas)`}
+            ⚠️
+            {excedeLimiteBigBags && ` Máximo ${MAX_BIGBAGS_POR_SALIDA} Big Bags por salida.`}
+            {excedeLimiteTarimas && ` Máximo ${MAX_TARIMAS_POR_SALIDA} tarimas por salida.`}
+            {!excedeLimiteBigBags && excedeStockBigBags && ` Solo hay ${curBigBags} Big Bags disponibles en este bloque.`}
+            {!excedeLimiteTarimas && excedeStockTarimas && ` Solo hay ${curTarimas} tarimas disponibles en este bloque.`}
           </div>
         )}
 

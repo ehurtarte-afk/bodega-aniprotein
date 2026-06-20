@@ -295,6 +295,8 @@ export function InventoryProvider({ children }) {
   // Devuelve { ok: true } si se aplicó, o { ok: false, error: "..." } si no.
   const dispatchSection = useCallback(
     (blockId, sectionId, salidaBigBags, salidaTarimas) => {
+      const MAX_BIGBAGS_POR_SALIDA = 20;
+      const MAX_TARIMAS_POR_SALIDA = 15;
       const block = blocksRef.current.find((b) => b.id === blockId);
       const section = block?.secciones.find((s) => s.id === sectionId);
       if (!section) return { ok: false, error: "No se encontró esa sección." };
@@ -309,6 +311,12 @@ export function InventoryProvider({ children }) {
       }
       if (outBigBags === 0 && outTarimas === 0) {
         return { ok: false, error: "Ingresa al menos una cantidad a despachar." };
+      }
+      if (outBigBags > MAX_BIGBAGS_POR_SALIDA) {
+        return { ok: false, error: `Máximo ${MAX_BIGBAGS_POR_SALIDA} Big Bags por salida.` };
+      }
+      if (outTarimas > MAX_TARIMAS_POR_SALIDA) {
+        return { ok: false, error: `Máximo ${MAX_TARIMAS_POR_SALIDA} tarimas por salida.` };
       }
       if (outBigBags > curBigBags) {
         return { ok: false, error: `Solo hay ${curBigBags} Big Bags disponibles, no puedes sacar ${outBigBags}.` };
