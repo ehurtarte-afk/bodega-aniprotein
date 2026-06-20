@@ -205,12 +205,16 @@ export function InventoryProvider({ children }) {
     (blockId, sectionId, patch) => {
       const cleanPatch = { ...patch };
       if ("bigBags" in cleanPatch) {
-        const n = Number(cleanPatch.bigBags);
+        const n = Math.round(Number(cleanPatch.bigBags));
         cleanPatch.bigBags = Number.isFinite(n) && n >= 0 ? n : 0;
       }
       if ("tarimas" in cleanPatch) {
-        const n = Number(cleanPatch.tarimas);
+        const n = Math.round(Number(cleanPatch.tarimas));
         cleanPatch.tarimas = Number.isFinite(n) && n >= 0 ? n : 0;
+      }
+      if ("parcialKg" in cleanPatch) {
+        const n = Number(cleanPatch.parcialKg);
+        cleanPatch.parcialKg = Number.isFinite(n) && n >= 0 ? n : 0;
       }
       let harinaForLog = "";
       let changeMsg = "";
@@ -228,6 +232,9 @@ export function InventoryProvider({ children }) {
             }
             if ("tarimas" in cleanPatch && Number(cleanPatch.tarimas) !== Number(s.tarimas)) {
               parts.push(`Tarimas ${s.tarimas} → ${cleanPatch.tarimas}`);
+            }
+            if ("parcialKg" in cleanPatch && Number(cleanPatch.parcialKg) !== Number(s.parcialKg || 0)) {
+              parts.push(`Parcial ${s.parcialKg || 0}kg → ${cleanPatch.parcialKg}kg`);
             }
             if ("lote" in cleanPatch && cleanPatch.lote !== s.lote) {
               parts.push(`Lote ${s.lote || "—"} → ${cleanPatch.lote || "—"}`);

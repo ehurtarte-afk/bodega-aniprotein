@@ -20,7 +20,7 @@ function buildRows(blocks) {
     }
     b.secciones.forEach((s) => {
       const tipo = getTipoHarina(s.harina);
-      const ton = (Number(s.bigBags || 0) * tipo.kgPorBigBag) / 1000;
+      const ton = (Number(s.bigBags || 0) * tipo.kgPorBigBag + Number(s.parcialKg || 0)) / 1000;
       rows.push({
         Bloque: `#${b.id}`,
         Harina: s.harina,

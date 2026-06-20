@@ -26,7 +26,8 @@ function QtyAdjuster({ value, onAdjust, disabled, step = 1 }) {
 function SectionCard({ blockId, section, canEdit, threshold, onUpdate, onAdjust, onRemove }) {
   const tipo = getTipoHarina(section.harina);
   const sacoSrc = getSacoSrc(tipo.saco);
-  const kg = Number(section.bigBags || 0) * tipo.kgPorBigBag;
+  const parcialKg = Number(section.parcialKg || 0);
+  const kg = Number(section.bigBags || 0) * tipo.kgPorBigBag + parcialKg;
   const isLow = Number(section.bigBags || 0) <= threshold && Number(section.bigBags || 0) > 0;
 
   return (
@@ -48,7 +49,7 @@ function SectionCard({ blockId, section, canEdit, threshold, onUpdate, onAdjust,
 
         {isLow && <div className="low-stock-tag">⚠️ Stock bajo — quedan {section.bigBags} Big Bags</div>}
 
-        <div className="metric-row">
+        <div className="metric-row metric-row-5">
           <div className="metric-box editable">
             <span className="metric-label">Big Bags</span>
             {canEdit ? (
@@ -73,9 +74,23 @@ function SectionCard({ blockId, section, canEdit, threshold, onUpdate, onAdjust,
               <span className="metric-value">{section.tarimas}</span>
             )}
           </div>
-          <div className="metric-box">
+          <div className="metric-box editable">
+            <span className="metric-label">Parcial (kg)</span>
+            {canEdit ? (
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={section.parcialKg ?? 0}
+                onChange={(e) => onUpdate(blockId, section.id, { parcialKg: e.target.value })}
+              />
+            ) : (
+              <span className="metric-value" style={{ fontSize: 16 }}>{parcialKg} kg</span>
+            )}
+          </div>
+          <div className="metric-box metric-box-tons">
             <span className="metric-label">Toneladas</span>
-            <span className="metric-value">{(kg / 1000).toFixed(1)} t</span>
+            <span className="metric-value-tons">{(kg / 1000).toLocaleString("es-MX", { minimumFractionDigits: 3, maximumFractionDigits: 3 })}<span className="tons-unit"> t</span></span>
           </div>
           <div className="metric-box editable">
             <span className="metric-label">Lote</span>

@@ -659,8 +659,13 @@ button { font-family: var(--font-body); }
   gap: 10px;
 }
 
+.metric-row-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 @media (max-width: 640px) {
   .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .metric-row-5 { grid-template-columns: repeat(2, 1fr); }
 }
 
 .metric-box {
@@ -683,6 +688,35 @@ button { font-family: var(--font-body); }
   font-size: 22px;
   font-weight: 700;
   color: var(--ink);
+}
+
+.metric-box-tons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--blue-pale);
+  padding: 14px 10px;
+}
+
+.metric-box-tons .metric-label {
+  margin-bottom: 8px;
+}
+
+.metric-value-tons {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--blue-dark);
+  line-height: 1;
+}
+
+.tons-unit {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 5px;
+  opacity: 0.75;
 }
 
 .metric-box.editable input {

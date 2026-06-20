@@ -9,7 +9,7 @@ function summarize(block) {
   const totalTarimas = block.secciones.reduce((sum, s) => sum + Number(s.tarimas || 0), 0);
   const totalKg = block.secciones.reduce((sum, s) => {
     const tipo = getTipoHarina(s.harina);
-    return sum + Number(s.bigBags || 0) * tipo.kgPorBigBag;
+    return sum + Number(s.bigBags || 0) * tipo.kgPorBigBag + Number(s.parcialKg || 0);
   }, 0);
   const harinas = [...new Set(block.secciones.map((s) => s.harina))];
   return { totalBigBags, totalTarimas, totalKg, harinas };
@@ -37,7 +37,7 @@ export default function Dashboard() {
     blocks.forEach((b) => {
       b.secciones.forEach((s) => {
         const tipo = getTipoHarina(s.harina);
-        totals[s.harina] = (totals[s.harina] || 0) + (Number(s.bigBags || 0) * tipo.kgPorBigBag) / 1000;
+        totals[s.harina] = (totals[s.harina] || 0) + (Number(s.bigBags || 0) * tipo.kgPorBigBag + Number(s.parcialKg || 0)) / 1000;
       });
     });
     return totals;
