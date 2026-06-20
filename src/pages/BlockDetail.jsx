@@ -119,6 +119,7 @@ function AddSectionForm({ blockId, onAdd }) {
   const [harina, setHarina] = useState(tiposDeHarina[0].nombre);
   const [bigBags, setBigBags] = useState("");
   const [tarimas, setTarimas] = useState("");
+  const [parcialKg, setParcialKg] = useState("");
   const [lote, setLote] = useState("");
 
   if (!open) {
@@ -132,7 +133,7 @@ function AddSectionForm({ blockId, onAdd }) {
   return (
     <div className="add-section-form">
       <h4>Nueva sección en este bloque</h4>
-      <div className="form-grid">
+      <div className="form-grid form-grid-6">
         <div>
           <label>Tipo de harina</label>
           <select value={harina} onChange={(e) => setHarina(e.target.value)}>
@@ -150,6 +151,10 @@ function AddSectionForm({ blockId, onAdd }) {
           <input type="number" min="0" value={tarimas} onChange={(e) => setTarimas(e.target.value)} />
         </div>
         <div>
+          <label>Parcial (kg)</label>
+          <input type="number" min="0" step="0.1" value={parcialKg} onChange={(e) => setParcialKg(e.target.value)} />
+        </div>
+        <div>
           <label>Lote</label>
           <input type="text" value={lote} onChange={(e) => setLote(e.target.value)} />
         </div>
@@ -158,8 +163,14 @@ function AddSectionForm({ blockId, onAdd }) {
         <button
           className="btn primary"
           onClick={() => {
-            onAdd(blockId, { harina, bigBags: Number(bigBags) || 0, tarimas: Number(tarimas) || 0, lote });
-            setBigBags(""); setTarimas(""); setLote(""); setOpen(false);
+            onAdd(blockId, {
+              harina,
+              bigBags: Number(bigBags) || 0,
+              tarimas: Number(tarimas) || 0,
+              parcialKg: Number(parcialKg) || 0,
+              lote,
+            });
+            setBigBags(""); setTarimas(""); setParcialKg(""); setLote(""); setOpen(false);
           }}
         >
           Guardar sección
