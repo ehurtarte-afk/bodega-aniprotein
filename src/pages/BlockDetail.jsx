@@ -195,9 +195,6 @@ export default function BlockDetail() {
   }
 
   const qrUrl = `${window.location.origin}${window.location.pathname}#/bloque/${block.id}`;
-  const totalBigBags = block.secciones.reduce((s, sec) => s + Number(sec.bigBags || 0), 0);
-  const totalTarimas = block.secciones.reduce((s, sec) => s + Number(sec.tarimas || 0), 0);
-  const totalKg = block.secciones.reduce((s, sec) => s + Number(sec.bigBags || 0) * getTipoHarina(sec.harina).kgPorBigBag, 0);
 
   return (
     <div>
@@ -209,23 +206,6 @@ export default function BlockDetail() {
           <div className="detail-meta">{block.secciones.length} sección(es) activa(s)</div>
         </div>
       </div>
-
-      {block.secciones.length > 0 && (
-        <div className="totals-banner">
-          <div className="tb-cell">
-            <div className="tb-label">Big Bags en este bloque</div>
-            <div className="tb-value">{totalBigBags}</div>
-          </div>
-          <div className="tb-cell">
-            <div className="tb-label">Tarimas en este bloque</div>
-            <div className="tb-value">{totalTarimas}</div>
-          </div>
-          <div className="tb-cell">
-            <div className="tb-label">Toneladas en este bloque</div>
-            <div className="tb-value">{(totalKg / 1000).toFixed(1)}<span className="tb-unit">t</span></div>
-          </div>
-        </div>
-      )}
 
       {!canEdit && (
         <div className="readonly-note">🔒 Modo solo lectura — no puedes editar cantidades</div>

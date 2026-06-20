@@ -57,7 +57,6 @@ export default function Dashboard() {
       <div className="page-heading">
         <div>
           <h1>Inventario de bodega</h1>
-          <p>Vista general de los {blocks.length} bloques. Toca un bloque para ver el detalle, o usa esto para hacer inventario sin bajar a escanear.</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button className="btn" onClick={() => exportToExcel(blocks)}>📊 Excel</button>
@@ -103,19 +102,19 @@ export default function Dashboard() {
 
       <div className="stat-row stat-row-harinas">
         {tiposDeHarina.map((t) => (
-          <div className="stat-cell" key={t.nombre} style={{ borderTopColor: t.color }}>
-            <div className="stat-label" style={{ color: t.color }}>
+          <div className="stat-cell" key={t.nombre} style={{ borderTopColor: "#6b7077" }}>
+            <div className="stat-label" style={{ color: "#6b7077" }}>
               Toneladas {t.nombre.replace("Harina de ", "")}
             </div>
             <div className="stat-value">{(toneladasPorHarina[t.nombre] || 0).toFixed(1)} t</div>
           </div>
         ))}
-        <div className="stat-cell">
-          <div className="stat-label">Tarimas totales</div>
-          <div className="stat-value">{grandTarimas}</div>
+        <div className="stat-cell" style={{ borderTopColor: "var(--blue)" }}>
+          <div className="stat-label" style={{ color: "var(--blue-dark)" }}>Tarimas totales</div>
+          <div className="stat-value accent">{grandTarimas}</div>
         </div>
-        <div className="stat-cell" style={{ borderTopColor: lowStockCount > 0 ? "var(--red)" : "var(--gray-line)" }}>
-          <div className="stat-label">Bloques con stock bajo</div>
+        <div className="stat-cell" style={{ borderTopColor: "var(--red)" }}>
+          <div className="stat-label" style={{ color: "var(--red)" }}>Bloques con stock bajo</div>
           <div className="stat-value" style={{ color: lowStockCount > 0 ? "var(--red)" : "var(--ink)" }}>
             {lowStockCount}
           </div>
@@ -128,7 +127,7 @@ export default function Dashboard() {
 
       <div className="block-grid">
         {filteredBlocks.map((block) => {
-          const { totalBigBags, totalTarimas, totalKg, harinas } = summarize(block);
+          const { harinas } = summarize(block);
           const tieneStock = block.secciones.length > 0;
           const tieneStockBajo = block.secciones.some(
             (s) => Number(s.bigBags || 0) <= threshold && Number(s.bigBags || 0) > 0
@@ -140,7 +139,7 @@ export default function Dashboard() {
               to={`/bloque/${block.id}`}
               key={block.id}
               className={`plate-card ${tieneStockBajo ? "low-stock" : ""}`}
-              style={dominante ? { borderTopColor: dominante.color } : {}}
+              style={dominante ? { borderTopColor: "#6b7077" } : {}}
             >
               <div className="plate-top">
                 <div className="plate-number">
@@ -154,26 +153,19 @@ export default function Dashboard() {
               </div>
               <div className="plate-body">
                 {tieneStock ? (
-                  <>
-                    {harinas.map((h) => {
-                      const tipo = getTipoHarina(h);
-                      return (
-                        <span
-                          className="harina-chip"
-                          key={h}
-                          style={{ background: tipo.colorClaro, color: tipo.color }}
-                        >
-                          <span className="harina-dot" style={{ background: tipo.color }} />
-                          {h}
-                        </span>
-                      );
-                    })}
-                    <div className="plate-summary-line">
-                      <span><strong>{totalBigBags}</strong> bags</span>
-                      <span><strong>{totalTarimas}</strong> tarimas</span>
-                      <span><strong>{(totalKg / 1000).toFixed(1)}</strong> t</span>
-                    </div>
-                  </>
+                  harinas.map((h) => {
+                    const tipo = getTipoHarina(h);
+                    return (
+                      <span
+                        className="harina-chip"
+                        key={h}
+                        style={{ background: tipo.colorClaro, color: tipo.color }}
+                      >
+                        <span className="harina-dot" style={{ background: tipo.color }} />
+                        {h}
+                      </span>
+                    );
+                  })
                 ) : (
                   <span className="empty-note">Bloque vacío</span>
                 )}
