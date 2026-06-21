@@ -11,6 +11,24 @@ import { ROLE_PASSWORDS } from "./rolePasswords";
 import "./index.css";
 
 const UNLOCKED_KEY = "bodega_unlocked_roles";
+const SITE_UNLOCK_KEY = "bodega_site_unlocked";
+const SITE_PASSWORD = "Aniproteincedigt";
+
+function isSiteUnlocked() {
+  try {
+    return window.sessionStorage.getItem(SITE_UNLOCK_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function markSiteUnlocked() {
+  try {
+    window.sessionStorage.setItem(SITE_UNLOCK_KEY, "true");
+  } catch {
+    // ignore
+  }
+}
 
 function getUnlockedRoles() {
   try {
@@ -154,12 +172,53 @@ function AppInner() {
   );
 }
 
+function SiteGate({ children }) {
+  const [unlocked, setUnlocked] = useState(isSiteUnlocked());
+  const [passwordInput, setPasswordInput] = useState("");
+  const [error, setError] = useState("");
+
+  if (unlocked) return children;
+
+  const handleSubmit = () => {
+    if (passwordInput === SITE_PASSWORD) {
+      markSiteUnlocked();
+      setUnlocked(true);
+    } else {
+      setError("Contraseña incorrecta");
+    }
+  };
+
+  return (
+    <div className="site-gate">
+      <div className="site-gate-card">
+        <img src={mascota} alt="Aniprotein" className="site-gate-mascot" />
+        <h2>Control de Bloques</h2>
+        <p>Ingresa la contraseña para entrar.</p>
+        <input
+          type="password"
+          autoFocus
+          value={passwordInput}
+          onChange={(e) => { setPasswordInput(e.target.value); setError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          placeholder="Contraseña"
+        />
+        {error && <span className="password-error">{error}</span>}
+        <button className="btn primary" style={{ width: "100%", justifyContent: "center", marginTop: 10 }} onClick={handleSubmit}>
+          Entrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <InventoryProvider>
-        <AppInner />
-      </InventoryProvider>
+      <SiteGate>
+        <InventoryProvider>
+          <AppInner />
+        </InventoryProvider>
+      </SiteGate>
     </ErrorBoundary>
   );
 }

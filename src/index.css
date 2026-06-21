@@ -1035,6 +1035,63 @@ button { font-family: var(--font-body); }
 }
 
 
+/* ---------- Site gate (pantalla de entrada general) ---------- */
+
+.site-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-bg);
+  padding: 20px;
+}
+
+.site-gate-card {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 36px 32px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.site-gate-mascot {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 14px;
+}
+
+.site-gate-card h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.site-gate-card p {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.site-gate-card input {
+  width: 100%;
+  border: 1.5px solid var(--gray-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: var(--font-body);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.site-gate-card input:focus-visible { outline: 2px solid var(--blue); border-color: var(--blue); }
+
+
+
 /* ---------- Password modal ---------- */
 
 .password-overlay {
