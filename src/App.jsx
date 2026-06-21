@@ -1,5 +1,5 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
-import { Component } from "react";
+import { Component, useState } from "react";
 import { InventoryProvider, useInventory } from "./InventoryContext";
 import Dashboard from "./pages/Dashboard";
 import BlockDetail from "./pages/BlockDetail";
@@ -7,7 +7,31 @@ import QRView from "./pages/QRView";
 import DispatchHome from "./pages/DispatchHome";
 import Dispatch from "./pages/Dispatch";
 import mascota from "./assets/mascota.png";
+import { ROLE_PASSWORDS } from "./rolePasswords";
 import "./index.css";
+
+const UNLOCKED_KEY = "bodega_unlocked_roles";
+
+function getUnlockedRoles() {
+  try {
+    const raw = window.sessionStorage.getItem(UNLOCKED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function markRoleUnlocked(role) {
+  try {
+    const unlocked = getUnlockedRoles();
+    if (!unlocked.includes(role)) {
+      unlocked.push(role);
+      window.sessionStorage.setItem(UNLOCKED_KEY, JSON.stringify(unlocked));
+    }
+  } catch {
+    // ignore
+  }
+}
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -35,32 +59,80 @@ class ErrorBoundary extends Component {
 
 function TopBar() {
   const { role, setRole, cloudMode, cloudReady } = useInventory();
+  const [pendingRole, setPendingRole] = useState(null);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [error, setError] = useState("");
+
+  const handleRoleChange = (newRole) => {
+    if (newRole === "lectura" || getUnlockedRoles().includes(newRole)) {
+      setRole(newRole);
+      return;
+    }
+    setPendingRole(newRole);
+    setPasswordInput("");
+    setError("");
+  };
+
+  const confirmPassword = () => {
+    if (passwordInput === ROLE_PASSWORDS[pendingRole]) {
+      markRoleUnlocked(pendingRole);
+      setRole(pendingRole);
+      setPendingRole(null);
+    } else {
+      setError("Contraseña incorrecta");
+    }
+  };
+
   return (
-    <div className="top-bar">
-      <div className="brand">
-        <img src={mascota} alt="Aniprotein" className="brand-mascot" />
-        <div className="brand-name-block">
-          <span className="brand-name">Aniprotein</span>
-          <span className="brand-sub">Control de Bloques</span>
+    <>
+      <div className="top-bar">
+        <div className="brand">
+          <img src={mascota} alt="Aniprotein" className="brand-mascot" />
+          <div className="brand-name-block">
+            <span className="brand-name">Aniprotein</span>
+            <span className="brand-sub">Control de Bloques</span>
+          </div>
+        </div>
+        <div className="top-bar-right">
+          <span className={`cloud-badge ${cloudMode ? (cloudReady ? "on" : "connecting") : "off"}`}>
+            {cloudMode ? (cloudReady ? "☁ En línea" : "☁ Conectando…") : "💾 Local"}
+          </span>
+          <span className="top-bar-meta">
+            {new Date().toLocaleDateString("es-MX", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
+          </span>
+          <div className="role-switch">
+            <span>Rol:</span>
+            <select value={role} onChange={(e) => handleRoleChange(e.target.value)}>
+              <option value="editor">Editor</option>
+              <option value="despachador">Despachador</option>
+              <option value="lectura">Solo lectura</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div className="top-bar-right">
-        <span className={`cloud-badge ${cloudMode ? (cloudReady ? "on" : "connecting") : "off"}`}>
-          {cloudMode ? (cloudReady ? "☁ En línea" : "☁ Conectando…") : "💾 Local"}
-        </span>
-        <span className="top-bar-meta">
-          {new Date().toLocaleDateString("es-MX", { weekday: "short", year: "numeric", month: "short", day: "numeric" })}
-        </span>
-        <div className="role-switch">
-          <span>Rol:</span>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="editor">Editor</option>
-            <option value="despachador">Despachador</option>
-            <option value="lectura">Solo lectura</option>
-          </select>
+
+      {pendingRole && (
+        <div className="password-overlay">
+          <div className="password-modal">
+            <h3>🔒 {pendingRole === "editor" ? "Acceso de Editor" : "Acceso de Despachador"}</h3>
+            <p>Ingresa la contraseña para entrar a este modo.</p>
+            <input
+              type="password"
+              autoFocus
+              value={passwordInput}
+              onChange={(e) => { setPasswordInput(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && confirmPassword()}
+              placeholder="Contraseña"
+            />
+            {error && <span className="password-error">{error}</span>}
+            <div className="password-actions">
+              <button className="btn primary" onClick={confirmPassword}>Entrar</button>
+              <button className="btn" onClick={() => setPendingRole(null)}>Cancelar</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 

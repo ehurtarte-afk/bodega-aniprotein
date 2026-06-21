@@ -85,7 +85,7 @@ export function InventoryProvider({ children }) {
   const [blocks, setBlocksState] = useState(() => normalizeBlocks(loadLocal(STORAGE_KEY, initialBlocks)));
   const [history, setHistoryState] = useState(() => loadLocal(HISTORY_KEY, []));
   const [threshold, setThresholdState] = useState(loadThreshold);
-  const [role, setRole] = useState("editor");
+  const [role, setRole] = useState("lectura");
   const [cloudReady, setCloudReady] = useState(false);
   const blocksRef = useRef(blocks);
   blocksRef.current = blocks;
