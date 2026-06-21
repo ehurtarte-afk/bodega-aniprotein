@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, set, push } from "firebase/database";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { initialBlocks } from "./data";
 import { firebaseConfig, firebaseEnabled } from "./firebaseConfig";
 
@@ -21,6 +22,11 @@ function getFirebaseDb() {
     try {
       firebaseApp = initializeApp(firebaseConfig);
       firebaseDb = getDatabase(firebaseApp);
+      const auth = getAuth(firebaseApp);
+      // Inicia sesión anónima automáticamente. Esto es gratis, no caduca,
+      // y permite que las reglas de Firebase exijan "estar autenticado"
+      // sin que la persona vea ningún inicio de sesión ni lo note.
+      signInAnonymously(auth).catch((err) => console.error("Error en autenticación anónima:", err));
     } catch (err) {
       console.error("Error iniciando Firebase:", err);
       return null;

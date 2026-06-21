@@ -12,7 +12,7 @@ import "./index.css";
 
 const UNLOCKED_KEY = "bodega_unlocked_roles";
 const SITE_UNLOCK_KEY = "bodega_site_unlocked";
-const SITE_PASSWORD = "Aniproteincedigt";
+export const SITE_PASSWORD = "Aniproteincedigt";
 
 function isSiteUnlocked() {
   try {
