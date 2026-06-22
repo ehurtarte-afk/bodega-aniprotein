@@ -101,44 +101,59 @@ export function InventoryProvider({ children }) {
     if (!firebaseEnabled) return;
     let offBlocks = () => {};
     let offHistory = () => {};
+    let offAuth = () => {};
+
     try {
       const db = getFirebaseDb();
-      if (!db) return;
+      if (!db || !firebaseApp) return;
+      const auth = getAuth(firebaseApp);
 
-      const blocksNode = ref(db, "blocks");
-      const historyNode = ref(db, "history");
+      const subscribe = () => {
+        const blocksNode = ref(db, "blocks");
+        const historyNode = ref(db, "history");
 
-      offBlocks = onValue(
-        blocksNode,
-        (snap) => {
-          try {
-            const val = snap.val();
-            if (val == null) {
-              set(blocksNode, initialBlocks).catch((err) => console.error("Error sembrando datos:", err));
-              setBlocksState(normalizeBlocks(initialBlocks));
-            } else {
-              setBlocksState(normalizeBlocks(val));
+        offBlocks = onValue(
+          blocksNode,
+          (snap) => {
+            try {
+              const val = snap.val();
+              if (val == null) {
+                set(blocksNode, initialBlocks).catch((err) => console.error("Error sembrando datos:", err));
+                setBlocksState(normalizeBlocks(initialBlocks));
+              } else {
+                setBlocksState(normalizeBlocks(val));
+              }
+              setCloudReady(true);
+            } catch (err) {
+              console.error("Error procesando snapshot de blocks:", err);
             }
-            setCloudReady(true);
-          } catch (err) {
-            console.error("Error procesando snapshot de blocks:", err);
-          }
-        },
-        (err) => console.error("Error leyendo blocks:", err)
-      );
+          },
+          (err) => console.error("Error leyendo blocks:", err)
+        );
 
-      offHistory = onValue(
-        historyNode,
-        (snap) => {
-          try {
-            const val = snap.val();
-            setHistoryState(val ? Object.values(val).filter((h) => h != null).sort((a, b) => (a.id < b.id ? 1 : -1)) : []);
-          } catch (err) {
-            console.error("Error procesando snapshot de history:", err);
-          }
-        },
-        (err) => console.error("Error leyendo history:", err)
-      );
+        offHistory = onValue(
+          historyNode,
+          (snap) => {
+            try {
+              const val = snap.val();
+              setHistoryState(val ? Object.values(val).filter((h) => h != null).sort((a, b) => (a.id < b.id ? 1 : -1)) : []);
+            } catch (err) {
+              console.error("Error procesando snapshot de history:", err);
+            }
+          },
+          (err) => console.error("Error leyendo history:", err)
+        );
+      };
+
+      // Esperamos a que la autenticación anónima esté lista (auth.currentUser
+      // exista) antes de suscribirnos a los datos. Si nos suscribimos antes,
+      // las reglas de Firebase (auth != null) rechazan la lectura y nunca
+      // se reintenta sola.
+      offAuth = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          subscribe();
+        }
+      });
     } catch (err) {
       console.error("Error conectando a Firebase, usando modo local:", err);
     }
@@ -147,6 +162,7 @@ export function InventoryProvider({ children }) {
       try {
         offBlocks();
         offHistory();
+        offAuth();
       } catch {
         // ignore cleanup errors
       }
