@@ -182,6 +182,7 @@ function SiteGate({ children }) {
   const handleSubmit = () => {
     if (passwordInput === SITE_PASSWORD) {
       markSiteUnlocked();
+      window.location.hash = "#/";
       setUnlocked(true);
     } else {
       setError("Contraseña incorrecta");

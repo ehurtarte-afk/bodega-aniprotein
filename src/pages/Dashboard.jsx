@@ -62,7 +62,6 @@ export default function Dashboard() {
           <button className="btn" onClick={() => exportToExcel(blocks)}>📊 Excel</button>
           <button className="btn" onClick={() => exportToPDF(blocks)}>📄 PDF</button>
           <Link to="/qr" className="btn">🏷️ QR</Link>
-          <Link to="/despachos" className="btn">🚚 Despachos</Link>
         </div>
       </div>
 
